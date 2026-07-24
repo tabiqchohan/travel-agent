@@ -1,0 +1,906 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Travel Agent Pro</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <style>
+        body { font-family: 'Inter', system-ui, -apple-system, sans-serif; }
+        .gradient-primary { background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); }
+        .gradient-card { background: linear-gradient(135deg, #1e293b 0%, #334155 100%); }
+        .glass { background: rgba(30, 41, 59, 0.8); backdrop-filter: blur(12px); }
+        .tab-btn.active { background: #3b82f6; color: white; }
+        .card-hover { transition: all 0.3s ease; }
+        .card-hover:hover { transform: translateY(-4px); box-shadow: 0 20px 40px rgba(0,0,0,0.3); }
+        .loading-spinner { border: 3px solid rgba(59,130,246,0.2); border-top-color: #3b82f6; border-radius: 50%; width: 2rem; height: 2rem; animation: spin 0.8s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .fade-in { animation: fadeIn 0.3s ease; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #1e293b; }
+        ::-webkit-scrollbar-thumb { background: #475569; border-radius: 4px; }
+        .result-card { animation: fadeIn 0.3s ease; }
+        .star-rating .star { cursor: pointer; font-size: 1.5rem; transition: all 0.2s; }
+        .star-rating .star:hover { transform: scale(1.2); }
+        .toast { position: fixed; bottom: 2rem; right: 2rem; z-index: 100; animation: slideIn 0.3s ease; }
+        @keyframes slideIn { from { transform: translateX(100px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+    </style>
+</head>
+<body class="bg-slate-900 text-white min-h-screen">
+    <!-- Navbar -->
+    <nav class="gradient-primary border-b border-slate-700/50 px-4 py-3 sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <i class="fas fa-earth-americas text-blue-400 text-2xl"></i>
+                <span class="text-xl font-bold">Travel Agent <span class="text-blue-400">Pro</span></span>
+            </div>
+            <div class="flex items-center gap-4">
+                <div id="auth-section">
+                    <button id="login-btn" onclick="showAuth('login')" class="text-slate-300 hover:text-white transition text-sm"><i class="fas fa-sign-in-alt mr-1"></i>Login</button>
+                    <button id="register-btn" onclick="showAuth('register')" class="ml-3 bg-blue-600 hover:bg-blue-500 px-4 py-1.5 rounded-lg text-sm transition"><i class="fas fa-user-plus mr-1"></i>Register</button>
+                </div>
+                <div id="user-section" class="hidden items-center gap-3">
+                    <span id="user-name" class="text-sm text-slate-300"></span>
+                    <button onclick="logout()" class="text-red-400 hover:text-red-300 text-sm"><i class="fas fa-sign-out-alt"></i></button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero -->
+    <div class="relative overflow-hidden">
+        <div class="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1488646953014-85cb44e25828?w=1920')] bg-cover bg-center opacity-10"></div>
+        <div class="max-w-7xl mx-auto px-4 py-12 relative">
+            <div class="text-center">
+                <h1 class="text-4xl md:text-6xl font-bold mb-4">Explore the World <span class="text-blue-400">Intelligently</span></h1>
+                <p class="text-slate-400 text-lg max-w-2xl mx-auto mb-8">Discover perfect destinations, find hotels, explore local cuisine, and plan your dream trip with AI-powered recommendations.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="max-w-7xl mx-auto px-4 pb-16">
+        <!-- Tabs -->
+        <div class="flex flex-wrap gap-2 mb-8 border-b border-slate-700/50 pb-2">
+            <button class="tab-btn active px-5 py-2.5 rounded-lg text-sm font-medium transition flex items-center gap-2" data-tab="destination"><i class="fas fa-map-marked-alt"></i>Find Destinations</button>
+            <button class="tab-btn px-5 py-2.5 rounded-lg text-sm font-medium transition text-slate-400 hover:text-white flex items-center gap-2" data-tab="hotels"><i class="fas fa-hotel"></i>Find Hotels</button>
+            <button class="tab-btn px-5 py-2.5 rounded-lg text-sm font-medium transition text-slate-400 hover:text-white flex items-center gap-2" data-tab="food"><i class="fas fa-utensils"></i>Find Food</button>
+            <button class="tab-btn px-5 py-2.5 rounded-lg text-sm font-medium transition text-slate-400 hover:text-white flex items-center gap-2" data-tab="smart"><i class="fas fa-robot"></i>Smart Assistant</button>
+            <button class="tab-btn px-5 py-2.5 rounded-lg text-sm font-medium transition text-slate-400 hover:text-white flex items-center gap-2" data-tab="trip-planner"><i class="fas fa-route"></i>Trip Planner</button>
+            <button class="tab-btn px-5 py-2.5 rounded-lg text-sm font-medium transition text-slate-400 hover:text-white flex items-center gap-2" data-tab="budget"><i class="fas fa-calculator"></i>Budget</button>
+            <button class="tab-btn px-5 py-2.5 rounded-lg text-sm font-medium transition text-slate-400 hover:text-white flex items-center gap-2" data-tab="weather"><i class="fas fa-cloud-sun"></i>Weather</button>
+        </div>
+
+        <!-- Loading -->
+        <div id="loading" class="hidden flex flex-col items-center justify-center py-16">
+            <div class="loading-spinner mb-4"></div>
+            <p class="text-slate-400 text-sm">Processing your request...</p>
+        </div>
+
+        <!-- Error -->
+        <div id="error-display" class="hidden bg-red-900/50 border border-red-700/50 text-red-300 px-6 py-4 rounded-xl mb-6 flex items-center gap-3">
+            <i class="fas fa-exclamation-circle text-xl"></i>
+            <span id="error-message"></span>
+        </div>
+
+        <!-- Tab Content -->
+        <div id="tab-contents">
+            <!-- Find Destinations -->
+            <div class="tab-content active fade-in" id="destination-tab">
+                <div class="grid md:grid-cols-2 gap-8">
+                    <div class="glass rounded-2xl p-6 border border-slate-700/50">
+                        <h2 class="text-xl font-semibold mb-6 flex items-center gap-2"><i class="fas fa-search text-blue-400"></i>Search Destinations</h2>
+                        <form id="destination-form" class="space-y-4">
+                            <div>
+                                <label class="block text-sm text-slate-400 mb-1.5">Travel Type</label>
+                                <select id="travel-type" class="w-full bg-slate-800 border border-slate-600 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-blue-500 transition">
+                                    <option value="">Any</option>
+                                    <option value="family">Family</option>
+                                    <option value="romantic">Romantic</option>
+                                    <option value="solo">Solo</option>
+                                    <option value="business">Business</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm text-slate-400 mb-1.5">Budget</label>
+                                <select id="budget" class="w-full bg-slate-800 border border-slate-600 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-blue-500 transition">
+                                    <option value="">Any</option>
+                                    <option value="low">Low (Budget-friendly)</option>
+                                    <option value="medium">Medium</option>
+                                    <option value="high">High (Luxury)</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm text-slate-400 mb-1.5">Interest</label>
+                                <select id="interest" class="w-full bg-slate-800 border border-slate-600 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-blue-500 transition">
+                                    <option value="">Any</option>
+                                    <option value="beach">Beach</option>
+                                    <option value="culture">Culture</option>
+                                    <option value="adventure">Adventure</option>
+                                    <option value="food">Food</option>
+                                </select>
+                            </div>
+                            <button type="submit" class="w-full bg-blue-600 hover:bg-blue-500 text-white py-3 rounded-xl font-medium transition flex items-center justify-center gap-2"><i class="fas fa-search"></i>Find Destinations</button>
+                        </form>
+                    </div>
+                    <div id="destination-results" class="space-y-3">
+                        <div class="glass rounded-2xl p-8 border border-slate-700/50 text-center">
+                            <i class="fas fa-map-marked-alt text-5xl text-slate-600 mb-4"></i>
+                            <p class="text-slate-500">Select your preferences and find the perfect destination!</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Find Hotels -->
+            <div class="tab-content hidden fade-in" id="hotels-tab">
+                <div class="grid md:grid-cols-2 gap-8">
+                    <div class="glass rounded-2xl p-6 border border-slate-700/50">
+                        <h2 class="text-xl font-semibold mb-6 flex items-center gap-2"><i class="fas fa-hotel text-blue-400"></i>Find Hotels</h2>
+                        <form id="hotels-form" class="space-y-4">
+                            <div>
+                                <label class="block text-sm text-slate-400 mb-1.5">Destination</label>
+                                <input type="text" id="hotel-destination" placeholder="e.g., Bali, Italy, Japan" class="w-full bg-slate-800 border border-slate-600 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-blue-500 transition" />
+                            </div>
+                            <div>
+                                <label class="block text-sm text-slate-400 mb-1.5">Category (Optional)</label>
+                                <select id="hotel-category" class="w-full bg-slate-800 border border-slate-600 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-blue-500 transition">
+                                    <option value="">All Categories</option>
+                                    <option value="budget">Budget</option>
+                                    <option value="mid_range">Mid-Range</option>
+                                    <option value="luxury">Luxury</option>
+                                </select>
+                            </div>
+                            <button type="submit" class="w-full bg-blue-600 hover:bg-blue-500 text-white py-3 rounded-xl font-medium transition flex items-center justify-center gap-2"><i class="fas fa-search"></i>Find Hotels</button>
+                        </form>
+                    </div>
+                    <div id="hotel-results" class="space-y-3">
+                        <div class="glass rounded-2xl p-8 border border-slate-700/50 text-center">
+                            <i class="fas fa-hotel text-5xl text-slate-600 mb-4"></i>
+                            <p class="text-slate-500">Enter a destination to find hotel recommendations!</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Find Food -->
+            <div class="tab-content hidden fade-in" id="food-tab">
+                <div class="grid md:grid-cols-2 gap-8">
+                    <div class="glass rounded-2xl p-6 border border-slate-700/50">
+                        <h2 class="text-xl font-semibold mb-6 flex items-center gap-2"><i class="fas fa-utensils text-blue-400"></i>Find Local Food</h2>
+                        <form id="food-form" class="space-y-4">
+                            <div>
+                                <label class="block text-sm text-slate-400 mb-1.5">Destination</label>
+                                <input type="text" id="food-destination" placeholder="e.g., Thailand, Japan, Italy" class="w-full bg-slate-800 border border-slate-600 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-blue-500 transition" />
+                            </div>
+                            <div>
+                                <label class="block text-sm text-slate-400 mb-1.5">Category (Optional)</label>
+                                <select id="food-category" class="w-full bg-slate-800 border border-slate-600 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-blue-500 transition">
+                                    <option value="">All</option>
+                                    <option value="street_food">Street Food</option>
+                                    <option value="main_dish">Main Dish</option>
+                                    <option value="dessert">Dessert</option>
+                                    <option value="beverage">Beverage</option>
+                                </select>
+                            </div>
+                            <button type="submit" class="w-full bg-blue-600 hover:bg-blue-500 text-white py-3 rounded-xl font-medium transition flex items-center justify-center gap-2"><i class="fas fa-search"></i>Find Food</button>
+                        </form>
+                    </div>
+                    <div id="food-results" class="space-y-3">
+                        <div class="glass rounded-2xl p-8 border border-slate-700/50 text-center">
+                            <i class="fas fa-utensils text-5xl text-slate-600 mb-4"></i>
+                            <p class="text-slate-500">Enter a destination to discover local cuisine!</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Smart Assistant -->
+            <div class="tab-content hidden fade-in" id="smart-tab">
+                <div class="max-w-3xl mx-auto">
+                    <div class="glass rounded-2xl p-6 border border-slate-700/50">
+                        <h2 class="text-xl font-semibold mb-2 flex items-center gap-2"><i class="fas fa-robot text-blue-400"></i>AI Smart Travel Assistant</h2>
+                        <p class="text-slate-400 text-sm mb-6">Describe your travel needs in natural language and get personalized recommendations.</p>
+                        <form id="smart-form" class="space-y-4">
+                            <textarea id="user-input" rows="4" placeholder="e.g., 'I want to go somewhere with my family on a budget, interested in beach destinations'" class="w-full bg-slate-800 border border-slate-600 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-blue-500 transition resize-none"></textarea>
+                            <div class="flex flex-wrap gap-2">
+                                <button type="submit" class="bg-blue-600 hover:bg-blue-500 text-white px-6 py-3 rounded-xl font-medium transition flex items-center gap-2"><i class="fas fa-magic"></i>Get Recommendations</button>
+                                <button type="button" onclick="setExample()" class="bg-slate-700 hover:bg-slate-600 text-slate-300 px-4 py-3 rounded-xl text-sm transition"><i class="fas fa-lightbulb mr-1"></i>Try an Example</button>
+                            </div>
+                        </form>
+                    </div>
+                    <div id="smart-results" class="mt-6"></div>
+                </div>
+            </div>
+
+            <!-- Trip Planner -->
+            <div class="tab-content hidden fade-in" id="trip-planner-tab">
+                <div class="max-w-4xl mx-auto">
+                    <div id="trip-auth-required" class="glass rounded-2xl p-12 border border-slate-700/50 text-center">
+                        <i class="fas fa-lock text-5xl text-slate-600 mb-4"></i>
+                        <h3 class="text-xl font-semibold mb-2">Login Required</h3>
+                        <p class="text-slate-400 mb-4">Please login to create and manage your trip plans.</p>
+                        <button onclick="showAuth('login')" class="bg-blue-600 hover:bg-blue-500 text-white px-6 py-2.5 rounded-xl transition"><i class="fas fa-sign-in-alt mr-1"></i>Login</button>
+                    </div>
+                    <div id="trip-planner-content" class="hidden">
+                        <div class="flex items-center justify-between mb-6">
+                            <h2 class="text-xl font-semibold flex items-center gap-2"><i class="fas fa-route text-blue-400"></i>My Trip Plans</h2>
+                            <button onclick="showCreateTrip()" class="bg-blue-600 hover:bg-blue-500 px-5 py-2.5 rounded-xl text-sm font-medium transition flex items-center gap-2"><i class="fas fa-plus"></i>New Trip</button>
+                        </div>
+                        <div id="trip-list" class="space-y-4"></div>
+                        <div id="trip-create-form" class="hidden glass rounded-2xl p-6 border border-slate-700/50 mb-6"></div>
+                        <div id="trip-detail" class="hidden"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Budget Calculator -->
+            <div class="tab-content hidden fade-in" id="budget-tab">
+                <div class="max-w-3xl mx-auto">
+                    <div class="glass rounded-2xl p-6 border border-slate-700/50">
+                        <h2 class="text-xl font-semibold mb-2 flex items-center gap-2"><i class="fas fa-calculator text-blue-400"></i>Budget Calculator</h2>
+                        <p class="text-slate-400 text-sm mb-6">Estimate your trip cost including flights, hotels, food, and activities.</p>
+                        <form id="budget-form" class="grid md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm text-slate-400 mb-1.5">Destination</label>
+                                <input type="text" id="budget-destination" placeholder="e.g., Bali" class="w-full bg-slate-800 border border-slate-600 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-blue-500 transition" />
+                            </div>
+                            <div>
+                                <label class="block text-sm text-slate-400 mb-1.5">Origin City</label>
+                                <input type="text" id="budget-origin" placeholder="e.g., New York" class="w-full bg-slate-800 border border-slate-600 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-blue-500 transition" />
+                            </div>
+                            <div>
+                                <label class="block text-sm text-slate-400 mb-1.5">Duration (days)</label>
+                                <input type="number" id="budget-duration" value="7" min="1" max="90" class="w-full bg-slate-800 border border-slate-600 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-blue-500 transition" />
+                            </div>
+                            <div>
+                                <label class="block text-sm text-slate-400 mb-1.5">Travelers</label>
+                                <input type="number" id="budget-travelers" value="1" min="1" max="20" class="w-full bg-slate-800 border border-slate-600 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-blue-500 transition" />
+                            </div>
+                            <div>
+                                <label class="block text-sm text-slate-400 mb-1.5">Hotel Category</label>
+                                <select id="budget-hotel-category" class="w-full bg-slate-800 border border-slate-600 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-blue-500 transition">
+                                    <option value="budget">Budget</option>
+                                    <option value="mid_range" selected>Mid-Range</option>
+                                    <option value="luxury">Luxury</option>
+                                </select>
+                            </div>
+                            <div class="flex items-end">
+                                <button type="submit" class="w-full bg-blue-600 hover:bg-blue-500 text-white py-3 rounded-xl font-medium transition flex items-center justify-center gap-2"><i class="fas fa-calculator"></i>Calculate Budget</button>
+                            </div>
+                        </form>
+                    </div>
+                    <div id="budget-results" class="mt-6"></div>
+                </div>
+            </div>
+
+            <!-- Weather -->
+            <div class="tab-content hidden fade-in" id="weather-tab">
+                <div class="max-w-3xl mx-auto">
+                    <div class="glass rounded-2xl p-6 border border-slate-700/50">
+                        <h2 class="text-xl font-semibold mb-6 flex items-center gap-2"><i class="fas fa-cloud-sun text-blue-400"></i>Weather Forecast</h2>
+                        <form id="weather-form" class="space-y-4">
+                            <div>
+                                <label class="block text-sm text-slate-400 mb-1.5">Destination</label>
+                                <input type="text" id="weather-destination" placeholder="e.g., Bali, Tokyo, Paris" class="w-full bg-slate-800 border border-slate-600 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-blue-500 transition" />
+                            </div>
+                            <button type="submit" class="bg-blue-600 hover:bg-blue-500 text-white px-6 py-3 rounded-xl font-medium transition flex items-center gap-2"><i class="fas fa-search"></i>Get Weather</button>
+                        </form>
+                    </div>
+                    <div id="weather-results" class="mt-6"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Auth Modal -->
+    <div id="auth-modal" class="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center hidden z-50">
+        <div class="bg-slate-800 rounded-2xl p-8 w-full max-w-md mx-4 border border-slate-700">
+            <div class="flex items-center justify-between mb-6">
+                <h3 id="auth-title" class="text-xl font-semibold">Login</h3>
+                <button onclick="hideAuth()" class="text-slate-400 hover:text-white text-xl"><i class="fas fa-times"></i></button>
+            </div>
+            <form id="auth-form" class="space-y-4">
+                <div id="auth-fields">
+                    <div id="register-fields" class="hidden space-y-4">
+                        <div>
+                            <label class="block text-sm text-slate-400 mb-1.5">Full Name</label>
+                            <input type="text" id="reg-name" class="w-full bg-slate-700 border border-slate-600 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-blue-500 transition" />
+                        </div>
+                        <div>
+                            <label class="block text-sm text-slate-400 mb-1.5">Email</label>
+                            <input type="email" id="reg-email" class="w-full bg-slate-700 border border-slate-600 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-blue-500 transition" />
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-sm text-slate-400 mb-1.5">Username</label>
+                        <input type="text" id="auth-username" class="w-full bg-slate-700 border border-slate-600 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-blue-500 transition" />
+                    </div>
+                    <div>
+                        <label class="block text-sm text-slate-400 mb-1.5">Password</label>
+                        <input type="password" id="auth-password" class="w-full bg-slate-700 border border-slate-600 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-blue-500 transition" />
+                    </div>
+                </div>
+                <button type="submit" id="auth-submit-btn" class="w-full bg-blue-600 hover:bg-blue-500 text-white py-3 rounded-xl font-medium transition">Login</button>
+            </form>
+            <p id="auth-toggle-text" class="text-center text-slate-400 text-sm mt-4">Don't have an account? <a href="#" onclick="toggleAuthMode()" class="text-blue-400 hover:underline">Register</a></p>
+        </div>
+    </div>
+
+    <script>
+        // State
+        let authMode = 'login';
+        let token = localStorage.getItem('token') || null;
+        let user = JSON.parse(localStorage.getItem('user') || 'null');
+
+        // API
+        const API = window.location.origin + '/api/v1';
+
+        function getHeaders() {
+            const headers = { 'Content-Type': 'application/json' };
+            if (token) headers['Authorization'] = `Bearer ${token}`;
+            return headers;
+        }
+
+        // Loading / Error
+        function showLoading() { document.getElementById('loading').classList.remove('hidden'); }
+        function hideLoading() { document.getElementById('loading').classList.add('hidden'); }
+        function showError(msg) {
+            document.getElementById('error-display').classList.remove('hidden');
+            document.getElementById('error-message').textContent = msg;
+            setTimeout(() => document.getElementById('error-display').classList.add('hidden'), 5000);
+        }
+
+        // Tab switching
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+                document.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden'));
+                btn.classList.add('active');
+                document.getElementById(btn.dataset.tab + '-tab').classList.remove('hidden');
+                document.getElementById(btn.dataset.tab + '-tab').classList.add('fade-in');
+            });
+        });
+
+        // Auth
+        function showAuth(mode) {
+            authMode = mode;
+            document.getElementById('auth-modal').classList.remove('hidden');
+            updateAuthUI();
+        }
+        function hideAuth() { document.getElementById('auth-modal').classList.add('hidden'); }
+        function toggleAuthMode() {
+            authMode = authMode === 'login' ? 'register' : 'login';
+            updateAuthUI();
+        }
+        function updateAuthUI() {
+            const isLogin = authMode === 'login';
+            document.getElementById('auth-title').textContent = isLogin ? 'Login' : 'Create Account';
+            document.getElementById('auth-submit-btn').textContent = isLogin ? 'Login' : 'Create Account';
+            document.getElementById('register-fields').classList.toggle('hidden', isLogin);
+            document.getElementById('auth-toggle-text').innerHTML = isLogin
+                ? "Don't have an account? <a href='#' onclick='toggleAuthMode()' class='text-blue-400 hover:underline'>Register</a>"
+                : "Already have an account? <a href='#' onclick='toggleAuthMode()' class='text-blue-400 hover:underline'>Login</a>";
+        }
+
+        document.getElementById('auth-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const isLogin = authMode === 'login';
+            const username = document.getElementById('auth-username').value;
+            const password = document.getElementById('auth-password').value;
+
+            const body = isLogin ? { username, password } : {
+                username,
+                password,
+                email: document.getElementById('reg-email').value,
+                full_name: document.getElementById('reg-name').value || null,
+            };
+
+            try {
+                showLoading();
+                const res = await fetch(`${API}/auth/${isLogin ? 'login' : 'register'}`, {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body)
+                });
+                if (res.ok) {
+                    const data = await res.json();
+                    token = data.access_token;
+                    user = data.user;
+                    localStorage.setItem('token', token);
+                    localStorage.setItem('user', JSON.stringify(user));
+                    updateUserUI();
+                    hideAuth();
+                } else {
+                    const err = await res.json();
+                    showError(err.detail || 'Authentication failed');
+                }
+            } catch (err) { showError(err.message); }
+            finally { hideLoading(); }
+        });
+
+        function updateUserUI() {
+            if (user) {
+                document.getElementById('auth-section').classList.add('hidden');
+                document.getElementById('user-section').classList.remove('hidden');
+                document.getElementById('user-name').textContent = 'Hi, ' + (user.full_name || user.username);
+                document.getElementById('trip-auth-required').classList.add('hidden');
+                document.getElementById('trip-planner-content').classList.remove('hidden');
+                loadTrips();
+            } else {
+                document.getElementById('auth-section').classList.remove('hidden');
+                document.getElementById('user-section').classList.add('hidden');
+                document.getElementById('trip-auth-required').classList.remove('hidden');
+                document.getElementById('trip-planner-content').classList.add('hidden');
+            }
+        }
+        function logout() {
+            token = null; user = null;
+            localStorage.removeItem('token'); localStorage.removeItem('user');
+            updateUserUI();
+        }
+        updateUserUI();
+
+        // Destination Search
+        document.getElementById('destination-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const travelType = document.getElementById('travel-type').value;
+            const budget = document.getElementById('budget').value;
+            const interest = document.getElementById('interest').value;
+            const params = new URLSearchParams();
+            if (travelType) params.set('travel_type', travelType);
+            if (budget) params.set('budget', budget);
+            if (interest) params.set('interest', interest);
+
+            showLoading();
+            try {
+                const res = await fetch(`${API}/destinations/search?${params}`, { headers: getHeaders() });
+                if (res.ok) {
+                    const data = await res.json();
+                    renderDestinations(data);
+                } else { const err = await res.json(); showError(err.detail || 'Search failed'); }
+            } catch (err) { showError(err.message); }
+            finally { hideLoading(); }
+        });
+
+        function renderDestinations(destinations) {
+            const container = document.getElementById('destination-results');
+            if (!destinations.length) {
+                container.innerHTML = `<div class="glass rounded-2xl p-8 border border-slate-700/50 text-center"><i class="fas fa-search text-5xl text-slate-600 mb-4"></i><p class="text-slate-400">No destinations found matching your criteria.</p></div>`;
+                return;
+            }
+            container.innerHTML = destinations.map(d => `
+                <div class="glass rounded-2xl p-5 border border-slate-700/50 card-hover">
+                    <div class="flex items-start justify-between">
+                        <div>
+                            <h3 class="text-lg font-semibold">${d.name}, ${d.country}</h3>
+                            <div class="flex items-center gap-3 mt-1 text-sm text-slate-400">
+                                <span><i class="fas fa-tag mr-1"></i>${d.interest}</span>
+                                <span><i class="fas fa-wallet mr-1"></i>${d.budget_level}</span>
+                                <span><i class="fas fa-star text-yellow-400 mr-1"></i>${d.rating.toFixed(1)}</span>
+                            </div>
+                        </div>
+                        <button onclick="toggleFavorite('${d.id}')" class="text-slate-500 hover:text-yellow-400 transition text-xl favorite-btn" data-id="${d.id}"><i class="far fa-heart"></i></button>
+                    </div>
+                    <p class="text-slate-400 text-sm mt-3 line-clamp-2">${d.description}</p>
+                    <div class="flex items-center gap-3 mt-3">
+                        ${d.best_time_to_visit ? `<p class="text-xs text-slate-500"><i class="fas fa-calendar mr-1"></i>${d.best_time_to_visit}</p>` : ''}
+                        ${d.lat && d.lng ? `<button onclick="showMap('${d.name}', ${d.lat}, ${d.lng})" class="ml-auto text-xs bg-blue-600/30 hover:bg-blue-600/50 text-blue-300 px-3 py-1 rounded-lg transition flex items-center gap-1"><i class="fas fa-map-marker-alt"></i>Map</button>` : ''}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        let mapInstance = null;
+        let mapModalActive = false;
+
+        function showMap(name, lat, lng) {
+            let modal = document.getElementById('map-modal');
+            if (!modal) {
+                modal = document.createElement('div');
+                modal.id = 'map-modal';
+                modal.className = 'fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50';
+                modal.innerHTML = `
+                    <div class="bg-slate-800 rounded-2xl w-full max-w-3xl mx-4 overflow-hidden border border-slate-700">
+                        <div class="flex items-center justify-between px-6 py-4 border-b border-slate-700">
+                            <h3 id="map-title" class="font-semibold"></h3>
+                            <button onclick="closeMap()" class="text-slate-400 hover:text-white text-xl"><i class="fas fa-times"></i></button>
+                        </div>
+                        <div id="map-container" style="height: 400px;"></div>
+                    </div>
+                `;
+                document.body.appendChild(modal);
+            }
+            document.getElementById('map-title').textContent = name;
+            modal.classList.remove('hidden');
+            mapModalActive = true;
+
+            setTimeout(() => {
+                if (mapInstance) mapInstance.remove();
+                mapInstance = L.map('map-container').setView([lat, lng], 10);
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    attribution: '&copy; OpenStreetMap contributors',
+                    maxZoom: 18,
+                }).addTo(mapInstance);
+                L.marker([lat, lng]).addTo(mapInstance)
+                    .bindPopup(`<b>${name}</b>`)
+                    .openPopup();
+            }, 100);
+        }
+
+        function closeMap() {
+            document.getElementById('map-modal').classList.add('hidden');
+            mapModalActive = false;
+            if (mapInstance) { mapInstance.remove(); mapInstance = null; }
+        }
+
+        document.addEventListener('click', (e) => {
+            if (mapModalActive && e.target === document.getElementById('map-modal')) closeMap();
+        });
+
+        // Hotels
+        document.getElementById('hotels-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const dest = document.getElementById('hotel-destination').value;
+            const category = document.getElementById('hotel-category').value;
+            const params = new URLSearchParams({ destination: dest });
+            if (category) params.set('category', category);
+
+            showLoading();
+            try {
+                const res = await fetch(`${API}/hotels?${params}`, { headers: getHeaders() });
+                if (res.ok) {
+                    const data = await res.json();
+                    renderHotels(data, dest);
+                } else { const err = await res.json(); showError(err.detail || 'Search failed'); }
+            } catch (err) { showError(err.message); }
+            finally { hideLoading(); }
+        });
+
+        function renderHotels(hotels, dest) {
+            const container = document.getElementById('hotel-results');
+            if (!hotels.length) {
+                container.innerHTML = `<div class="glass rounded-2xl p-8 border border-slate-700/50 text-center"><i class="fas fa-hotel text-5xl text-slate-600 mb-4"></i><p class="text-slate-400">No hotels found for ${dest}.</p></div>`;
+                return;
+            }
+            container.innerHTML = `<h3 class="text-lg font-semibold mb-4">Hotels in ${dest}</h3>` +
+                hotels.map(h => `
+                <div class="glass rounded-2xl p-5 border border-slate-700/50 card-hover">
+                    <div class="flex items-center justify-between">
+                        <h4 class="font-semibold">${h.name}</h4>
+                        <span class="text-xs px-3 py-1 rounded-full ${
+                            h.category === 'luxury' ? 'bg-purple-900/50 text-purple-300' :
+                            h.category === 'mid_range' ? 'bg-blue-900/50 text-blue-300' :
+                            'bg-green-900/50 text-green-300'
+                        }">${h.category.replace('_', ' ')}</span>
+                    </div>
+                    ${h.price_per_night ? `<p class="text-blue-400 font-medium mt-2">$${h.price_per_night}/night</p>` : ''}
+                </div>
+            `).join('');
+        }
+
+        // Food
+        document.getElementById('food-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const dest = document.getElementById('food-destination').value;
+            const category = document.getElementById('food-category').value;
+            const params = new URLSearchParams({ destination: dest });
+            if (category) params.set('category', category);
+
+            showLoading();
+            try {
+                const res = await fetch(`${API}/food?${params}`, { headers: getHeaders() });
+                if (res.ok) {
+                    const data = await res.json();
+                    renderFood(data, dest);
+                } else { const err = await res.json(); showError(err.detail || 'Search failed'); }
+            } catch (err) { showError(err.message); }
+            finally { hideLoading(); }
+        });
+
+        function renderFood(foods, dest) {
+            const container = document.getElementById('food-results');
+            if (!foods.length) {
+                container.innerHTML = `<div class="glass rounded-2xl p-8 border border-slate-700/50 text-center"><i class="fas fa-utensils text-5xl text-slate-600 mb-4"></i><p class="text-slate-400">No food recommendations found for ${dest}.</p></div>`;
+                return;
+            }
+            container.innerHTML = `<h3 class="text-lg font-semibold mb-4">Local Food in ${dest}</h3>` +
+                foods.map(f => `
+                <div class="glass rounded-2xl p-5 border border-slate-700/50 card-hover">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h4 class="font-semibold">${f.name}</h4>
+                            <span class="text-xs text-slate-500">${f.category ? f.category.replace('_', ' ') : ''}${f.spice_level ? ' | ' + f.spice_level : ''}</span>
+                        </div>
+                        <span class="text-sm text-blue-400">${f.price_range || ''}</span>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Smart Assistant
+        document.getElementById('smart-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const input = document.getElementById('user-input').value;
+            showLoading();
+            try {
+                const res = await fetch(`${API}/smart`, {
+                    method: 'POST', headers: getHeaders(), body: JSON.stringify({ user_input: input })
+                });
+                if (res.ok) {
+                    const data = await res.json();
+                    document.getElementById('smart-results').innerHTML = `
+                        <div class="glass rounded-2xl p-6 border border-slate-700/50 result-card">
+                            <div class="flex items-center gap-2 mb-3">
+                                <i class="fas fa-robot text-blue-400"></i>
+                                <span class="text-sm text-blue-400 font-medium">${data.category} recommendation</span>
+                            </div>
+                            <div class="text-slate-300 leading-relaxed whitespace-pre-wrap">${data.result}</div>
+                        </div>
+                    `;
+                } else { const err = await res.json(); showError(err.detail || 'Request failed'); }
+            } catch (err) { showError(err.message); }
+            finally { hideLoading(); }
+        });
+
+        function setExample() {
+            document.getElementById('user-input').value = "I want to go somewhere with my family on a budget, interested in beach destinations";
+        }
+
+        // Trip Planner
+        async function loadTrips() {
+            if (!token) return;
+            try {
+                const res = await fetch(`${API}/trips`, { headers: getHeaders() });
+                if (res.ok) {
+                    const trips = await res.json();
+                    renderTrips(trips);
+                }
+            } catch (err) { showError(err.message); }
+        }
+
+        function renderTrips(trips) {
+            const container = document.getElementById('trip-list');
+            if (!trips.length) {
+                container.innerHTML = `<div class="glass rounded-2xl p-8 border border-slate-700/50 text-center"><i class="fas fa-suitcase text-5xl text-slate-600 mb-4"></i><p class="text-slate-400">No trips yet. Create your first trip plan!</p></div>`;
+                return;
+            }
+            container.innerHTML = trips.map(t => `
+                <div class="glass rounded-2xl p-5 border border-slate-700/50 card-hover cursor-pointer" onclick="viewTrip('${t.id}')">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h3 class="font-semibold">${t.title}</h3>
+                            <p class="text-sm text-slate-400">${t.start_date || 'Flexible'} - ${t.end_date || 'Flexible'} | ${t.days?.length || 0} days</p>
+                        </div>
+                        <span class="text-xs px-3 py-1 rounded-full bg-slate-700 text-slate-300">${t.status}</span>
+                    </div>
+                    ${t.budget_total ? `<p class="text-sm text-blue-400 mt-2">Budget: $${t.budget_total.toFixed(2)}</p>` : ''}
+                </div>
+            `).join('');
+        }
+
+        function showCreateTrip() {
+            const form = document.getElementById('trip-create-form');
+            form.classList.remove('hidden');
+            form.innerHTML = `
+                <h3 class="text-lg font-semibold mb-4">Create New Trip</h3>
+                <form id="create-trip-form" class="space-y-4">
+                    <div>
+                        <label class="block text-sm text-slate-400 mb-1.5">Trip Title</label>
+                        <input type="text" id="trip-title" required placeholder="e.g., Summer Vacation in Bali" class="w-full bg-slate-800 border border-slate-600 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-blue-500 transition" />
+                    </div>
+                    <div class="grid md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm text-slate-400 mb-1.5">Start Date</label>
+                            <input type="date" id="trip-start" class="w-full bg-slate-800 border border-slate-600 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-blue-500 transition" />
+                        </div>
+                        <div>
+                            <label class="block text-sm text-slate-400 mb-1.5">End Date</label>
+                            <input type="date" id="trip-end" class="w-full bg-slate-800 border border-slate-600 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-blue-500 transition" />
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-sm text-slate-400 mb-1.5">Description</label>
+                        <textarea id="trip-desc" rows="2" placeholder="Describe your trip..." class="w-full bg-slate-800 border border-slate-600 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-blue-500 transition"></textarea>
+                    </div>
+                    <div class="flex gap-3">
+                        <button type="submit" class="bg-blue-600 hover:bg-blue-500 text-white px-6 py-2.5 rounded-xl font-medium transition flex items-center gap-2"><i class="fas fa-plus"></i>Create Trip</button>
+                        <button type="button" onclick="document.getElementById('trip-create-form').classList.add('hidden')" class="bg-slate-700 hover:bg-slate-600 text-slate-300 px-4 py-2.5 rounded-xl transition">Cancel</button>
+                    </div>
+                </form>
+            `;
+            document.getElementById('create-trip-form').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const body = {
+                    title: document.getElementById('trip-title').value,
+                    start_date: document.getElementById('trip-start').value || null,
+                    end_date: document.getElementById('trip-end').value || null,
+                    description: document.getElementById('trip-desc').value || null,
+                };
+                showLoading();
+                try {
+                    const res = await fetch(`${API}/trips`, { method: 'POST', headers: getHeaders(), body: JSON.stringify(body) });
+                    if (res.ok) {
+                        form.classList.add('hidden');
+                        loadTrips();
+                    } else { const err = await res.json(); showError(err.detail || 'Failed to create trip'); }
+                } catch (err) { showError(err.message); }
+                finally { hideLoading(); }
+            });
+        }
+
+        async function viewTrip(id) {
+            showLoading();
+            try {
+                const res = await fetch(`${API}/trips/${id}`, { headers: getHeaders() });
+                if (res.ok) {
+                    const trip = await res.json();
+                    const container = document.getElementById('trip-detail');
+                    container.classList.remove('hidden');
+                    container.innerHTML = `
+                        <div class="glass rounded-2xl p-6 border border-slate-700/50">
+                            <div class="flex items-center justify-between mb-4">
+                                <h3 class="text-xl font-semibold">${trip.title}</h3>
+                                <button onclick="document.getElementById('trip-detail').classList.add('hidden')" class="text-slate-400 hover:text-white"><i class="fas fa-times"></i></button>
+                            </div>
+                            <p class="text-slate-400 text-sm mb-4">${trip.description || 'No description'}</p>
+                            ${trip.start_date ? `<p class="text-sm text-slate-400"><i class="fas fa-calendar mr-1"></i>${trip.start_date} to ${trip.end_date || 'Flexible'}</p>` : ''}
+                            ${trip.budget_total ? `<p class="text-sm text-blue-400 mt-1"><i class="fas fa-dollar-sign mr-1"></i>Budget: $${trip.budget_total.toFixed(2)}</p>` : ''}
+                            <hr class="border-slate-700 my-4" />
+                            <h4 class="font-semibold mb-3">Trip Days (${trip.days?.length || 0})</h4>
+                            ${trip.days?.length ? trip.days.map(d => `
+                                <div class="bg-slate-800/50 rounded-xl p-4 mb-3">
+                                    <p class="text-sm font-medium text-blue-400">Day ${d.day_number} ${d.date ? '- ' + d.date : ''}</p>
+                                    ${d.notes ? `<p class="text-sm text-slate-400 mt-1">${d.notes}</p>` : ''}
+                                    ${d.activities?.length ? d.activities.map(a => `
+                                        <div class="flex items-center gap-3 mt-2 text-sm text-slate-300">
+                                            <i class="fas fa-circle text-[6px] text-blue-400"></i>
+                                            <span>${a.title}</span>
+                                            ${a.start_time ? `<span class="text-slate-500">${a.start_time}${a.end_time ? '-'+a.end_time : ''}</span>` : ''}
+                                            ${a.cost ? `<span class="text-blue-400 ml-auto">$${a.cost.toFixed(2)}</span>` : ''}
+                                        </div>
+                                    `).join('') : '<p class="text-xs text-slate-500 mt-1">No activities planned</p>'}
+                                </div>
+                            `).join('') : '<p class="text-sm text-slate-500">No days added yet.</p>'}
+                            <button onclick="deleteTrip('${trip.id}')" class="mt-4 text-red-400 hover:text-red-300 text-sm"><i class="fas fa-trash mr-1"></i>Delete Trip</button>
+                        </div>
+                    `;
+                }
+            } catch (err) { showError(err.message); }
+            finally { hideLoading(); }
+        }
+
+        async function deleteTrip(id) {
+            if (!confirm('Delete this trip?')) return;
+            try {
+                const res = await fetch(`${API}/trips/${id}`, { method: 'DELETE', headers: getHeaders() });
+                if (res.ok) {
+                    document.getElementById('trip-detail').classList.add('hidden');
+                    loadTrips();
+                }
+            } catch (err) { showError(err.message); }
+        }
+
+        // Budget Calculator
+        document.getElementById('budget-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const body = {
+                destination: document.getElementById('budget-destination').value,
+                origin: document.getElementById('budget-origin').value || null,
+                duration_days: parseInt(document.getElementById('budget-duration').value),
+                travelers: parseInt(document.getElementById('budget-travelers').value),
+                hotel_category: document.getElementById('budget-hotel-category').value,
+            };
+            showLoading();
+            try {
+                const res = await fetch(`${API}/budget/estimate`, {
+                    method: 'POST', headers: getHeaders(), body: JSON.stringify(body)
+                });
+                if (res.ok) {
+                    const data = await res.json();
+                    document.getElementById('budget-results').innerHTML = `
+                        <div class="glass rounded-2xl p-6 border border-slate-700/50 result-card">
+                            <h3 class="text-lg font-semibold mb-4">Budget Estimate for ${data.destination}</h3>
+                            <div class="text-3xl font-bold text-blue-400 mb-6">$${data.total_estimated_cost.toLocaleString()}</div>
+                            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                                ${data.breakdown.flight ? `
+                                <div class="bg-slate-800/50 rounded-xl p-4 text-center">
+                                    <i class="fas fa-plane text-blue-400 text-xl mb-2"></i>
+                                    <p class="text-xs text-slate-400">Flight</p>
+                                    <p class="font-semibold">$${data.breakdown.flight.toLocaleString()}</p>
+                                </div>` : ''}
+                                ${data.breakdown.hotel ? `
+                                <div class="bg-slate-800/50 rounded-xl p-4 text-center">
+                                    <i class="fas fa-hotel text-green-400 text-xl mb-2"></i>
+                                    <p class="text-xs text-slate-400">Hotel</p>
+                                    <p class="font-semibold">$${data.breakdown.hotel.toLocaleString()}</p>
+                                </div>` : ''}
+                                ${data.breakdown.food ? `
+                                <div class="bg-slate-800/50 rounded-xl p-4 text-center">
+                                    <i class="fas fa-utensils text-yellow-400 text-xl mb-2"></i>
+                                    <p class="text-xs text-slate-400">Food</p>
+                                    <p class="font-semibold">$${data.breakdown.food.toLocaleString()}</p>
+                                </div>` : ''}
+                                ${data.breakdown.activities ? `
+                                <div class="bg-slate-800/50 rounded-xl p-4 text-center">
+                                    <i class="fas fa-hiking text-purple-400 text-xl mb-2"></i>
+                                    <p class="text-xs text-slate-400">Activities</p>
+                                    <p class="font-semibold">$${data.breakdown.activities.toLocaleString()}</p>
+                                </div>` : ''}
+                            </div>
+                            ${data.tips?.length ? `
+                            <div class="bg-blue-900/30 rounded-xl p-4">
+                                <p class="text-sm font-medium text-blue-300 mb-2"><i class="fas fa-lightbulb mr-1"></i>Money-Saving Tips</p>
+                                <ul class="text-sm text-slate-400 space-y-1">${data.tips.map(t => `<li>• ${t}</li>`).join('')}</ul>
+                            </div>` : ''}
+                        </div>
+                    `;
+                } else { const err = await res.json(); showError(err.detail || 'Calculation failed'); }
+            } catch (err) { showError(err.message); }
+            finally { hideLoading(); }
+        });
+
+        // Weather
+        document.getElementById('weather-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const dest = document.getElementById('weather-destination').value;
+            showLoading();
+            try {
+                const res = await fetch(`${API}/weather?destination=${encodeURIComponent(dest)}`, { headers: getHeaders() });
+                if (res.ok) {
+                    const data = await res.json();
+                    document.getElementById('weather-results').innerHTML = `
+                        <div class="glass rounded-2xl p-6 border border-slate-700/50 result-card">
+                            <div class="flex items-center justify-between mb-4">
+                                <h3 class="text-lg font-semibold">${data.destination}</h3>
+                                <i class="fas fa-cloud-sun text-4xl text-blue-400"></i>
+                            </div>
+                            <div class="text-4xl font-bold mb-2">${data.temperature_c}°C</div>
+                            <p class="text-slate-400 mb-4">${data.description}</p>
+                            <div class="grid grid-cols-3 gap-4">
+                                <div class="bg-slate-800/50 rounded-xl p-3 text-center">
+                                    <p class="text-xs text-slate-400">Feels Like</p>
+                                    <p class="font-semibold">${data.feels_like_c}°C</p>
+                                </div>
+                                <div class="bg-slate-800/50 rounded-xl p-3 text-center">
+                                    <p class="text-xs text-slate-400">Humidity</p>
+                                    <p class="font-semibold">${data.humidity}%</p>
+                                </div>
+                                <div class="bg-slate-800/50 rounded-xl p-3 text-center">
+                                    <p class="text-xs text-slate-400">Wind</p>
+                                    <p class="font-semibold">${data.wind_speed} km/h</p>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                } else { const err = await res.json(); showError(err.detail || 'Weather fetch failed'); }
+            } catch (err) { showError(err.message); }
+            finally { hideLoading(); }
+        });
+
+        // Favorites
+        async function toggleFavorite(destId) {
+            if (!token) { showAuth('login'); return; }
+            try {
+                const res = await fetch(`${API}/favorites`, {
+                    method: 'POST', headers: getHeaders(),
+                    body: JSON.stringify({ favorite_type: 'destination', destination_id: destId })
+                });
+                if (res.ok) {
+                    const btn = document.querySelector(`.favorite-btn[data-id="${destId}"] i`);
+                    if (btn) btn.classList.toggle('far');
+                    if (btn) btn.classList.toggle('fas');
+                    if (btn) btn.classList.toggle('text-yellow-400');
+                }
+            } catch (err) { showError(err.message); }
+        }
+
+        // Close auth modal on outside click
+        document.getElementById('auth-modal').addEventListener('click', (e) => {
+            if (e.target === e.currentTarget) hideAuth();
+        });
+    </script>
+</body>
+</html>

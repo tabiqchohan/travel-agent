@@ -1,0 +1,8 @@
+#!/bin/bash
+echo "Starting Travel Agent Server..."
+echo
+echo "Installing dependencies if needed..."
+pip install -r requirements.txt
+echo
+echo "Starting server and opening browser..."
+python server.py
