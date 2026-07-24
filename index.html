@@ -338,9 +338,10 @@
         let user = JSON.parse(localStorage.getItem('user') || 'null');
 
         // API
-        const API = window.location.origin.includes('localhost') || window.location.origin.includes('127.0.0.1')
+        const RENDER_URL = '__RENDER_URL__';
+        const API = (window.location.origin.includes('localhost') || window.location.origin.includes('127.0.0.1'))
             ? window.location.origin + '/api/v1'
-            : '/api/v1';
+            : (RENDER_URL.startsWith('__') ? window.location.origin + '/api/v1' : RENDER_URL + '/api/v1');
 
         function getHeaders() {
             const headers = { 'Content-Type': 'application/json' };

@@ -1,110 +1,118 @@
-# Travel Agent - Your Personal Travel Assistant
+# Travel Agent Pro v2.0
 
-A comprehensive travel recommendation system with both API backend and user-friendly frontend.
+Advanced travel recommendation system with FastAPI backend, modern frontend, JWT auth, AI-powered Smart Assistant (Groq), trip planner, budget calculator, interactive maps, and more.
 
 ## Features
 
-- **Destination Finder**: Find travel destinations based on travel type, budget, and interests
-- **Hotel Recommendations**: Get hotel suggestions by destination and budget range
-- **Local Food Guide**: Discover famous local foods in various destinations
-- **Smart Assistant**: Natural language travel recommendations
-- **Web Interface**: User-friendly frontend to interact with all features
+- **Destination Finder** — Search by travel type, budget, interest
+- **Hotel Recommendations** — Budget/Mid-range/Luxury categories
+- **Local Food Guide** — Discover local cuisine worldwide
+- **AI Smart Assistant** — Natural language processing (Groq LLM)
+- **Trip Planner** — Multi-day itinerary builder with activities
+- **Budget Calculator** — Estimate total trip cost (flight, hotel, food, activities)
+- **Weather Forecast** — Real-time weather data (OpenWeatherMap)
+- **User Auth** — JWT-based registration/login
+- **Reviews & Ratings** — User reviews with star ratings
+- **Favorites/Wishlist** — Save destinations
+- **Interactive Maps** — OpenStreetMap + Leaflet
 
-## Supported Destinations
+## Local Development
 
-- Beach Destinations: Bali, Maldives, Seychelles
-- Cultural Destinations: Vietnam, Italy, France
-- Adventure Destinations: Nepal, Costa Rica, Switzerland
-- Food Destinations: Thailand, Mexico, Japan
-- General Destinations: Portugal, Turkey, Greece
-
-## Getting Started
-
-### Prerequisites
-
-- Python 3.12 or higher
-- pip package manager
-
-### Installation
-
-1. **Install Dependencies**:
-   ```bash
-   pip install -r requirements.txt
-   ```
-
-2. **Start the Server**:
-   - Option 1 - With Frontend: Run the combined server
-     ```bash
-     python server.py
-     ```
-
-   - Option 2 - API Only: Run the original server
-     ```bash
-     python main.py
-     # or
-     uvicorn main:app --reload
-     ```
-
-3. **Access the Application**:
-   - **Frontend Interface**: [http://localhost:8080](http://localhost:8080)
-   - **API Documentation**: [http://localhost:8080/api/docs](http://localhost:8080/api/docs)
-   - **API Redoc**: [http://localhost:8080/api/redoc](http://localhost:8080/api/redoc)
-
-## Using the Travel Agent
-
-### 1. Web Interface (Recommended for End Users)
-
-Access [http://localhost:8000](http://localhost:8000) for a user-friendly interface with:
-
-- **Find Destinations**: Select travel type, budget, and interests
-- **Find Hotels**: Enter a destination to get hotel recommendations
-- **Find Food**: Enter a destination to discover local cuisine
-- **Smart Assistant**: Describe your travel needs in natural language
-
-### 2. Direct API Usage
-
-You can also use the API endpoints directly:
-
-#### Destination Finder
 ```bash
-curl -X POST "http://localhost:8000/api/destination" \
-  -H "Content-Type: application/json" \
-  -d '{"travel_type": "family", "budget": "medium", "interest": "beach"}'
+# 1. Install dependencies
+pip install -r requirements.txt
+
+# 2. Create .env file (copy from .env.example)
+#    Minimum: SECRET_KEY=your-random-key
+
+# 3. Run with frontend
+python server.py
+# → http://localhost:8080
+
+# 4. Or API only
+uvicorn backend.main:app --reload
+# → http://localhost:8000/api/v1/docs
 ```
 
-#### Hotel Finder
-```bash
-curl -X POST "http://localhost:8000/api/hotels" \
-  -H "Content-Type: application/json" \
-  -d '{"destination": "Bali"}'
-```
+## Deployment
 
-#### Food Finder
-```bash
-curl -X POST "http://localhost:8000/api/food" \
-  -H "Content-Type: application/json" \
-  -d '{"destination": "Thailand"}'
-```
+### Backend → Render
 
-#### Smart Assistant
-```bash
-curl -X POST "http://localhost:8000/api/smart" \
-  -H "Content-Type: application/json" \
-  -d '{"user_input": "I want to go somewhere with my family on a budget, interested in beach destinations"}'
-```
+1. Push code to GitHub
+2. Go to [render.com](https://render.com) → New Web Service
+3. Connect your GitHub repo
+4. Fill:
 
-## Example Queries
+   | Field | Value |
+   |-------|-------|
+   | **Runtime** | Python |
+   | **Build Command** | `pip install -r requirements.txt` |
+   | **Start Command** | `uvicorn backend.main:app --host 0.0.0.0 --port $PORT` |
+   | **Plan** | Free |
 
-- "I want to go on a family beach vacation with a moderate budget"
-- "Show me luxury hotels in Italy"
-- "What are famous foods in Japan?"
-- "I'm planning a romantic trip with high budget and cultural interest"
-- "Where can I go for adventure travel on a low budget?"
+5. Add Environment Variables:
+
+   | Key | Value |
+   |-----|-------|
+   | `DATABASE_URL_POSTGRES` | `postgresql+asyncpg://user:pass@host/db` (from [Neon](https://neon.tech)) |
+   | `SECRET_KEY` | random string |
+   | `GROQ_API_KEY` | (optional) from [console.groq.com](https://console.groq.com) |
+   | `OPENWEATHER_API_KEY` | (optional) from [openweathermap.org](https://openweathermap.org) |
+   | `DEBUG` | `false` |
+
+6. Deploy! Get your URL like `https://travel-agent-api.onrender.com`
+
+### Frontend → Vercel
+
+1. Go to [vercel.com](https://vercel.com) → New Project
+2. Import your GitHub repo
+3. **Framework Preset**: Other
+4. **Root Directory**: `./` (default)
+5. Add Environment Variable:
+
+   | Key | Value |
+   |-----|-------|
+   | `RENDER_URL` | `https://your-app.onrender.com` (from step above) |
+
+6. Deploy!
+
+> **Note:** The frontend will use the `RENDER_URL` env var to call the backend API. Locally it auto-detects `localhost`.
 
 ## Project Structure
 
-- `main.py`: Core FastAPI backend with travel recommendation tools
-- `server.py`: Combined server for API and frontend
-- `index.html`: User-friendly frontend interface
-- `requirements.txt`: Python dependencies
-- `README.md`: This file
+```
+├── backend/
+│   ├── main.py         — FastAPI app (entry point)
+│   ├── config.py       — Settings via .env
+│   ├── database.py     — SQLAlchemy async engine
+│   ├── models/         — 8 database models
+│   ├── schemas/        — Pydantic request/response schemas
+│   ├── routers/        — 10 API route modules
+│   ├── services/       — Business logic
+│   └── utils/          — Security, seed data
+├── index.html          — Frontend (Tailwind CSS + Leaflet)
+├── server.py           — Combined local dev server
+├── vercel.json         — Vercel frontend config
+├── render.yaml         — Render IaC config
+├── Dockerfile
+├── docker-compose.yml
+└── requirements.txt
+```
+
+## API Endpoints
+
+| Endpoint | Description |
+|----------|-------------|
+| `GET /api/v1/health` | Health check |
+| `POST /api/v1/auth/register` | Register user |
+| `POST /api/v1/auth/login` | Login |
+| `GET /api/v1/destinations` | List all destinations |
+| `GET /api/v1/destinations/search` | Search destinations |
+| `GET /api/v1/hotels?destination=X` | Find hotels |
+| `GET /api/v1/food?destination=X` | Find food |
+| `POST /api/v1/smart` | AI smart assistant |
+| `POST /api/v1/trips` | Create trip (auth) |
+| `POST /api/v1/budget/estimate` | Budget calculator |
+| `GET /api/v1/weather?destination=X` | Weather forecast |
+| `POST /api/v1/reviews` | Add review (auth) |
+| `POST /api/v1/favorites` | Add favorite (auth) |
