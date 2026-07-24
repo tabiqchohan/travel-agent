@@ -12,7 +12,10 @@ class Settings(BaseSettings):
 
     @property
     def db_url(self) -> str:
-        return self.DATABASE_URL_POSTGRES or self.DATABASE_URL
+        url = self.DATABASE_URL_POSTGRES or self.DATABASE_URL
+        if "postgresql" in url and "+asyncpg" not in url:
+            url = url.replace("postgresql://", "postgresql+asyncpg://")
+        return url
 
     @property
     def is_sqlite(self) -> bool:
