@@ -8,6 +8,15 @@ class Settings(BaseSettings):
     DEBUG: bool = True
 
     DATABASE_URL: str = "sqlite+aiosqlite:///./travel_agent.db"
+    DATABASE_URL_POSTGRES: str = ""
+
+    @property
+    def db_url(self) -> str:
+        return self.DATABASE_URL_POSTGRES or self.DATABASE_URL
+
+    @property
+    def is_sqlite(self) -> bool:
+        return "sqlite" in self.db_url
 
     SECRET_KEY: str = "change-this-to-a-secure-random-key-in-production"
     ALGORITHM: str = "HS256"

@@ -338,7 +338,9 @@
         let user = JSON.parse(localStorage.getItem('user') || 'null');
 
         // API
-        const API = window.location.origin + '/api/v1';
+        const API = window.location.origin.includes('localhost') || window.location.origin.includes('127.0.0.1')
+            ? window.location.origin + '/api/v1'
+            : '/api/v1';
 
         function getHeaders() {
             const headers = { 'Content-Type': 'application/json' };
