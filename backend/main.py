@@ -1,28 +1,31 @@
-from contextlib import asynccontextmanager
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.staticfiles import StaticFiles
+from fastapi.responses import JSONResponse
 
 from .config import settings
-from .database import init_db
+from .database import init_db, async_session
 from .routers import auth, destinations, hotels, food, trips, budget, weather, smart, reviews, favorites
 from .utils.seed_data import seed_destinations
-from .database import async_session
+
+_db_initialized = False
 
 
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    await init_db()
-    async with async_session() as db:
-        await seed_destinations(db)
-    yield
+async def ensure_db():
+    global _db_initialized
+    if not _db_initialized:
+        try:
+            await init_db()
+            async with async_session() as db:
+                await seed_destinations(db)
+            _db_initialized = True
+        except Exception as e:
+            print(f"DB init warning (non-fatal): {e}")
 
 
 app = FastAPI(
     title=settings.APP_NAME,
     description="Advanced Travel Agent API with destination, hotel, food recommendations, trip planning, budget estimation, and more.",
     version=settings.APP_VERSION,
-    lifespan=lifespan,
 )
 
 app.add_middleware(
@@ -32,6 +35,14 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+@app.middleware("http")
+async def db_init_middleware(request: Request, call_next):
+    await ensure_db()
+    response = await call_next(request)
+    return response
+
 
 api_prefix = "/v1"
 
@@ -50,3 +61,11 @@ app.include_router(favorites.router, prefix=api_prefix)
 @app.get("/v1/health")
 async def health_check():
     return {"status": "ok", "version": settings.APP_VERSION}
+
+
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    return JSONResponse(
+        status_code=500,
+        content={"detail": f"Internal server error: {str(exc)}"},
+    )
