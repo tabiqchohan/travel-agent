@@ -339,9 +339,11 @@
 
         // API
         const RENDER_URL = '__RENDER_URL__';
-        const API = (window.location.origin.includes('localhost') || window.location.origin.includes('127.0.0.1'))
+        const isLocal = window.location.origin.includes('localhost') || window.location.origin.includes('127.0.0.1');
+        const hasRenderUrl = !RENDER_URL.startsWith('__');
+        const API = isLocal
             ? window.location.origin + '/api/v1'
-            : (RENDER_URL.startsWith('__') ? window.location.origin + '/api/v1' : RENDER_URL + '/api/v1');
+            : (hasRenderUrl ? RENDER_URL + '/v1' : window.location.origin + '/v1');
 
         function getHeaders() {
             const headers = { 'Content-Type': 'application/json' };
