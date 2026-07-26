@@ -12,9 +12,17 @@ class Settings(BaseSettings):
 
     @property
     def db_url(self) -> str:
+        from urllib.parse import urlparse, urlunparse, parse_qs, urlencode
         url = self.DATABASE_URL_POSTGRES or self.DATABASE_URL
         if "postgresql" in url and "+asyncpg" not in url:
             url = url.replace("postgresql://", "postgresql+asyncpg://")
+        parsed = urlparse(url)
+        if parsed.query:
+            params = parse_qs(parsed.query)
+            for key in ["sslmode", "channel_binding"]:
+                params.pop(key, None)
+            query = urlencode(params, doseq=True)
+            url = urlunparse(parsed._replace(query=query))
         return url
 
     @property
