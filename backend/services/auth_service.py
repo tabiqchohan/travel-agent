@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from fastapi import HTTPException, status
@@ -78,7 +78,7 @@ class AuthService:
             expires_delta=timedelta(hours=1),
         )
         user.reset_token = reset_token
-        user.reset_token_expiry = datetime.now(timezone.utc) + timedelta(hours=1)
+        user.reset_token_expiry = datetime.utcnow() + timedelta(hours=1)
         await self.db.flush()
         return reset_token
 
@@ -99,7 +99,7 @@ class AuthService:
         if not user or user.reset_token != token:
             raise HTTPException(status_code=400, detail="Invalid or expired reset token")
 
-        if user.reset_token_expiry and user.reset_token_expiry < datetime.now(timezone.utc):
+        if user.reset_token_expiry and user.reset_token_expiry < datetime.utcnow():
             raise HTTPException(status_code=400, detail="Reset token has expired")
 
         user.hashed_password = hash_password(new_password)
