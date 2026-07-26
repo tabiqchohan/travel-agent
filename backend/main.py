@@ -3,15 +3,16 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from .config import settings
-from .database import init_db, async_session
+from .database import init_db, async_session, engine
 from .routers import auth, destinations, hotels, food, trips, budget, weather, smart, reviews, favorites
 from .utils.seed_data import seed_destinations
 
 _db_initialized = False
+_db_error = None
 
 
 async def ensure_db():
-    global _db_initialized
+    global _db_initialized, _db_error
     if not _db_initialized:
         try:
             await init_db()
@@ -19,7 +20,8 @@ async def ensure_db():
                 await seed_destinations(db)
             _db_initialized = True
         except Exception as e:
-            print(f"DB init warning (non-fatal): {e}")
+            _db_error = str(e)
+            raise
 
 
 app = FastAPI(
@@ -39,7 +41,9 @@ app.add_middleware(
 
 @app.middleware("http")
 async def db_init_middleware(request: Request, call_next):
-    await ensure_db()
+    path = request.url.path
+    if "/debug/" not in path:
+        await ensure_db()
     response = await call_next(request)
     return response
 
@@ -63,9 +67,19 @@ async def health_check():
     return {"status": "ok", "version": settings.APP_VERSION}
 
 
+@app.get("/v1/debug/status")
+async def debug_status():
+    return {
+        "db_initialized": _db_initialized,
+        "db_error": _db_error,
+        "db_url": settings.db_url.replace(settings.SECRET_KEY[:10] if settings.SECRET_KEY else "", "***"),
+        "is_sqlite": settings.is_sqlite,
+    }
+
+
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
     return JSONResponse(
         status_code=500,
-        content={"detail": f"Internal server error: {str(exc)}"},
+        content={"detail": f"{type(exc).__name__}: {str(exc)}"},
     )
