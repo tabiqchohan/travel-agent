@@ -26,7 +26,7 @@ async def ensure_db():
 
 app = FastAPI(
     title=settings.APP_NAME,
-    description="Advanced Travel Agent API with destination, hotel, food recommendations, trip planning, budget estimation, and more.",
+    description="Advanced Travel Agent API",
     version=settings.APP_VERSION,
 )
 
@@ -36,20 +36,37 @@ app.add_middleware(
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+    expose_headers=["*"],
 )
+
+CORS_HEADERS = {
+    "Access-Control-Allow-Origin": "*",
+    "Access-Control-Allow-Methods": "*",
+    "Access-Control-Allow-Headers": "*",
+    "Access-Control-Allow-Credentials": "true",
+}
 
 
 @app.middleware("http")
-async def db_init_middleware(request: Request, call_next):
+async def cors_and_db_middleware(request: Request, call_next):
     if request.method == "OPTIONS":
-        return await call_next(request)
-    path = request.url.path
-    if "/debug/" not in path and "/health" not in path:
+        response = JSONResponse(content="ok", status_code=200)
+    else:
+        if "/debug/" not in request.url.path and "/health" not in request.url.path:
+            try:
+                await ensure_db()
+            except Exception:
+                pass
         try:
-            await ensure_db()
-        except Exception:
-            pass
-    response = await call_next(request)
+            response = await call_next(request)
+        except Exception as e:
+            response = JSONResponse(
+                status_code=500,
+                content={"detail": f"{type(e).__name__}: {str(e)}"},
+            )
+
+    for key, value in CORS_HEADERS.items():
+        response.headers[key] = value
     return response
 
 
@@ -77,14 +94,5 @@ async def debug_status():
     return {
         "db_initialized": _db_initialized,
         "db_error": _db_error,
-        "db_url": settings.db_url.replace(settings.SECRET_KEY[:10] if settings.SECRET_KEY else "", "***"),
         "is_sqlite": settings.is_sqlite,
     }
-
-
-@app.exception_handler(Exception)
-async def global_exception_handler(request: Request, exc: Exception):
-    return JSONResponse(
-        status_code=500,
-        content={"detail": f"{type(exc).__name__}: {str(exc)}"},
-    )
