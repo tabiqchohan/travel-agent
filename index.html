@@ -269,6 +269,22 @@
                                     <option value="luxury">Luxury</option>
                                 </select>
                             </div>
+                            <div>
+                                <label class="block text-sm text-slate-400 mb-1.5">Currency</label>
+                                <select id="budget-currency" class="w-full bg-slate-800 border border-slate-600 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-blue-500 transition">
+                                    <option value="USD">USD ($)</option>
+                                    <option value="EUR">EUR (€)</option>
+                                    <option value="GBP">GBP (£)</option>
+                                    <option value="INR">INR (₹)</option>
+                                    <option value="JPY">JPY (¥)</option>
+                                    <option value="THB">THB (฿)</option>
+                                    <option value="VND">VND (₫)</option>
+                                    <option value="IDR">IDR (Rp)</option>
+                                    <option value="TRY">TRY (₺)</option>
+                                    <option value="MXN">MXN (Mex$)</option>
+                                    <option value="CHF">CHF (Fr)</option>
+                                </select>
+                            </div>
                             <div class="flex items-end">
                                 <button type="submit" class="w-full bg-blue-600 hover:bg-blue-500 text-white py-3 rounded-xl font-medium transition flex items-center justify-center gap-2"><i class="fas fa-calculator"></i>Calculate Budget</button>
                             </div>
@@ -581,7 +597,7 @@
                             'bg-green-900/50 text-green-300'
                         }">${h.category.replace('_', ' ')}</span>
                     </div>
-                    ${h.price_per_night ? `<p class="text-blue-400 font-medium mt-2">$${h.price_per_night}/night</p>` : ''}
+                    ${h.price_per_night ? `<p class="text-blue-400 font-medium mt-2">${h.currency === 'USD' ? '$' : h.currency === 'EUR' ? '€' : h.currency === 'GBP' ? '£' : h.currency === 'JPY' ? '¥' : h.currency === 'INR' ? '₹' : h.currency === 'THB' ? '฿' : '$'}${h.price_per_night}/night</p>` : ''}
                 </div>
             `).join('');
         }
@@ -797,6 +813,7 @@
                 duration_days: parseInt(document.getElementById('budget-duration').value),
                 travelers: parseInt(document.getElementById('budget-travelers').value),
                 hotel_category: document.getElementById('budget-hotel-category').value,
+                currency: document.getElementById('budget-currency').value,
             };
             showLoading();
             try {
@@ -808,31 +825,31 @@
                     document.getElementById('budget-results').innerHTML = `
                         <div class="glass rounded-2xl p-6 border border-slate-700/50 result-card">
                             <h3 class="text-lg font-semibold mb-4">Budget Estimate for ${data.destination}</h3>
-                            <div class="text-3xl font-bold text-blue-400 mb-6">$${data.total_estimated_cost.toLocaleString()}</div>
+                            <div class="text-3xl font-bold text-blue-400 mb-6">${data.currency_symbol}${data.total_estimated_cost.toLocaleString()}</div>
                             <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
                                 ${data.breakdown.flight ? `
                                 <div class="bg-slate-800/50 rounded-xl p-4 text-center">
                                     <i class="fas fa-plane text-blue-400 text-xl mb-2"></i>
                                     <p class="text-xs text-slate-400">Flight</p>
-                                    <p class="font-semibold">$${data.breakdown.flight.toLocaleString()}</p>
+                                    <p class="font-semibold">${data.currency_symbol}${data.breakdown.flight.toLocaleString()}</p>
                                 </div>` : ''}
                                 ${data.breakdown.hotel ? `
                                 <div class="bg-slate-800/50 rounded-xl p-4 text-center">
                                     <i class="fas fa-hotel text-green-400 text-xl mb-2"></i>
                                     <p class="text-xs text-slate-400">Hotel</p>
-                                    <p class="font-semibold">$${data.breakdown.hotel.toLocaleString()}</p>
+                                    <p class="font-semibold">${data.currency_symbol}${data.breakdown.hotel.toLocaleString()}</p>
                                 </div>` : ''}
                                 ${data.breakdown.food ? `
                                 <div class="bg-slate-800/50 rounded-xl p-4 text-center">
                                     <i class="fas fa-utensils text-yellow-400 text-xl mb-2"></i>
                                     <p class="text-xs text-slate-400">Food</p>
-                                    <p class="font-semibold">$${data.breakdown.food.toLocaleString()}</p>
+                                    <p class="font-semibold">${data.currency_symbol}${data.breakdown.food.toLocaleString()}</p>
                                 </div>` : ''}
                                 ${data.breakdown.activities ? `
                                 <div class="bg-slate-800/50 rounded-xl p-4 text-center">
                                     <i class="fas fa-hiking text-purple-400 text-xl mb-2"></i>
                                     <p class="text-xs text-slate-400">Activities</p>
-                                    <p class="font-semibold">$${data.breakdown.activities.toLocaleString()}</p>
+                                    <p class="font-semibold">${data.currency_symbol}${data.breakdown.activities.toLocaleString()}</p>
                                 </div>` : ''}
                             </div>
                             ${data.tips?.length ? `

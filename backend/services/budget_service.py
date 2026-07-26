@@ -1,7 +1,7 @@
 import json
 from typing import Optional
 
-from ..schemas.budget import BudgetEstimateRequest, BudgetEstimateResponse, CostBreakdown
+from ..schemas.budget import BudgetEstimateRequest, BudgetEstimateResponse, CostBreakdown, CURRENCIES
 
 
 class BudgetService:
@@ -64,10 +64,21 @@ class BudgetService:
             "Eat at local markets and street food stalls for authentic and affordable meals",
         ]
 
+        symbol = CURRENCIES.get(req.currency, "$")
+
+        if req.currency != "USD":
+            rates = {"EUR": 0.92, "GBP": 0.79, "JPY": 149.5, "INR": 83.0, "THB": 35.5,
+                     "VND": 25450, "IDR": 15700, "TRY": 30.5, "MXN": 17.2, "CHF": 0.88,
+                     "NPR": 133.0, "CRC": 511.0, "MVR": 15.4, "SCR": 13.6}
+            rate = rates.get(req.currency, 1.0)
+            total *= rate
+
         return BudgetEstimateResponse(
             destination=req.destination,
             duration_days=req.duration_days,
             travelers=req.travelers,
+            currency=req.currency,
+            currency_symbol=symbol,
             total_estimated_cost=round(total, 2),
             breakdown=breakdown,
             tips=tips,

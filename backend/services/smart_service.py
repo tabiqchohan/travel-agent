@@ -20,22 +20,26 @@ class SmartService:
         self.food_service = FoodService(db)
         self.llm = GroqLLMService()
 
-    DEST_KEYWORDS = ["travel", "where", "go", "destination", "trip", "vacation", "visit", "family", "budget", "interest"]
-    HOTEL_KEYWORDS = ["hotel", "stay", "accommodation", "place to stay", "lodging", "resort"]
-    FOOD_KEYWORDS = ["food", "eat", "local food", "cuisine", "restaurant", "dishes", "drink"]
+    DEST_KEYWORDS = ["travel", "where", "go", "destination", "trip", "vacation", "visit", "family", "budget", "interest", "holiday", "tour"]
+    HOTEL_KEYWORDS = ["hotel", "stay", "accommodation", "place to stay", "lodging", "resort", "room", "hostel"]
+    FOOD_KEYWORDS = ["food", "eat", "local food", "cuisine", "restaurant", "dishes", "drink", "dining", "lunch", "dinner", "breakfast", "street food"]
+    PLAN_KEYWORDS = ["plan", "itinerary", "schedule", "day", "route", "trip plan", "travel plan", "multi-day"]
 
     async def process(self, user_input: str) -> SmartResponse:
         input_lower = user_input.lower()
 
-        if any(kw in input_lower for kw in self.DEST_KEYWORDS):
+        if any(kw in input_lower for kw in self.PLAN_KEYWORDS):
             result = await self._handle_destination_query(user_input, input_lower)
-            return SmartResponse(result=result, category="destination")
-        elif any(kw in input_lower for kw in self.HOTEL_KEYWORDS):
-            result = await self._handle_hotel_query(user_input, input_lower)
-            return SmartResponse(result=result, category="hotel")
+            return SmartResponse(result=result, category="trip_plan")
         elif any(kw in input_lower for kw in self.FOOD_KEYWORDS):
             result = await self._handle_food_query(user_input, input_lower)
             return SmartResponse(result=result, category="food")
+        elif any(kw in input_lower for kw in self.HOTEL_KEYWORDS):
+            result = await self._handle_hotel_query(user_input, input_lower)
+            return SmartResponse(result=result, category="hotel")
+        elif any(kw in input_lower for kw in self.DEST_KEYWORDS):
+            result = await self._handle_destination_query(user_input, input_lower)
+            return SmartResponse(result=result, category="destination")
         else:
             result = await self._handle_destination_query(user_input, input_lower)
             return SmartResponse(result=result, category="destination")

@@ -79,29 +79,36 @@ class TripService:
         return True
 
     async def _load_relations(self, trip: Trip) -> TripResponse:
+        from ..schemas.trip import TripDayResponse, TripActivityResponse
+
         days_result = await self.db.execute(
             select(TripDay).where(TripDay.trip_id == trip.id).order_by(TripDay.day_number)
         )
         days = days_result.scalars().all()
 
-        trip_response = TripResponse.model_validate(trip)
-        trip_response.days = []
+        trip_data = {
+            "id": trip.id,
+            "user_id": trip.user_id,
+            "title": trip.title,
+            "description": trip.description,
+            "destination_id": trip.destination_id,
+            "start_date": trip.start_date,
+            "end_date": trip.end_date,
+            "budget_total": trip.budget_total,
+            "status": trip.status,
+            "is_public": trip.is_public,
+            "created_at": trip.created_at,
+            "updated_at": trip.updated_at,
+            "days": [],
+        }
+
         for day in days:
             acts_result = await self.db.execute(
                 select(TripActivity).where(TripActivity.trip_day_id == day.id).order_by(TripActivity.start_time)
             )
             activities = acts_result.scalars().all()
-            day_response = type('DayResponse', (), {
-                'id': day.id,
-                'trip_id': day.trip_id,
-                'day_number': day.day_number,
-                'date': day.date,
-                'notes': day.notes,
-                'activities': activities,
-            })
-            # Use model_validate directly
-            from ..schemas.trip import TripDayResponse, TripActivityResponse
-            trip_response.days.append(TripDayResponse(
+
+            trip_data["days"].append(TripDayResponse(
                 id=day.id,
                 trip_id=day.trip_id,
                 day_number=day.day_number,
@@ -110,4 +117,4 @@ class TripService:
                 activities=[TripActivityResponse.model_validate(a) for a in activities],
             ))
 
-        return trip_response
+        return TripResponse(**trip_data)

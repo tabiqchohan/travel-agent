@@ -15,10 +15,18 @@ class HotelService:
         dest_result = await self.db.execute(
             select(Destination).where(
                 Destination.is_active == True,
-                Destination.name.ilike(f"%{params.destination}%")
+                Destination.name.ilike(f"%{params.destination.strip()}%")
             )
         )
         destination = dest_result.scalar_one_or_none()
+        if not destination:
+            dest_result = await self.db.execute(
+                select(Destination).where(
+                    Destination.is_active == True,
+                    Destination.country.ilike(f"%{params.destination.strip()}%")
+                )
+            )
+            destination = dest_result.scalar_one_or_none()
         if not destination:
             return []
 
@@ -39,10 +47,18 @@ class HotelService:
         dest_result = await self.db.execute(
             select(Destination).where(
                 Destination.is_active == True,
-                Destination.name.ilike(f"%{destination_name}%")
+                Destination.name.ilike(f"%{destination_name.strip()}%")
             )
         )
         destination = dest_result.scalar_one_or_none()
+        if not destination:
+            dest_result = await self.db.execute(
+                select(Destination).where(
+                    Destination.is_active == True,
+                    Destination.country.ilike(f"%{destination_name.strip()}%")
+                )
+            )
+            destination = dest_result.scalar_one_or_none()
         if not destination:
             return []
 

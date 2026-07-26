@@ -1,5 +1,12 @@
 from typing import Optional
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
+
+
+CURRENCIES = {
+    "USD": "$", "EUR": "€", "GBP": "£", "JPY": "¥", "INR": "₹",
+    "THB": "฿", "VND": "₫", "IDR": "Rp", "TRY": "₺", "MXN": "Mex$",
+    "CHF": "Fr", "NPR": "Rs", "CRC": "₡", "MVR": "Rf", "SCR": "₨",
+}
 
 
 class BudgetEstimateRequest(BaseModel):
@@ -8,6 +15,7 @@ class BudgetEstimateRequest(BaseModel):
     duration_days: int = 7
     travelers: int = 1
     hotel_category: str = "mid_range"
+    currency: str = "USD"
     include_flight: bool = True
     include_hotel: bool = True
     include_food: bool = True
@@ -27,6 +35,7 @@ class BudgetEstimateResponse(BaseModel):
     duration_days: int
     travelers: int
     currency: str = "USD"
+    currency_symbol: str = "$"
     total_estimated_cost: float
     breakdown: CostBreakdown
     tips: list[str] = []

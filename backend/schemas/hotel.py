@@ -37,6 +37,7 @@ class HotelResponse(BaseModel):
     lng: Optional[float] = None
     is_active: bool
     created_at: datetime
+    currency: str = "USD"
 
     class Config:
         from_attributes = True
