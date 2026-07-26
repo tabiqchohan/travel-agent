@@ -41,9 +41,14 @@ app.add_middleware(
 
 @app.middleware("http")
 async def db_init_middleware(request: Request, call_next):
+    if request.method == "OPTIONS":
+        return await call_next(request)
     path = request.url.path
-    if "/debug/" not in path:
-        await ensure_db()
+    if "/debug/" not in path and "/health" not in path:
+        try:
+            await ensure_db()
+        except Exception:
+            pass
     response = await call_next(request)
     return response
 
