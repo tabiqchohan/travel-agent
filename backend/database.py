@@ -37,5 +37,20 @@ async def init_db():
     from .models.trip import Trip, TripDay, TripActivity
     from .models.review import Review
     from .models.favorite import Favorite
+    from .models.chat import ChatMessage
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
+
+    async with engine.begin() as conn:
+        def add_missing_columns(sync_conn):
+            from sqlalchemy import inspect, text
+            inspector = inspect(sync_conn)
+            columns = [c["name"] for c in inspector.get_columns("users")]
+            if "reset_token" not in columns:
+                sync_conn.execute(text("ALTER TABLE users ADD COLUMN reset_token VARCHAR(255)"))
+            if "reset_token_expiry" not in columns:
+                sync_conn.execute(text("ALTER TABLE users ADD COLUMN reset_token_expiry TIMESTAMP"))
+        try:
+            await conn.run_sync(add_missing_columns)
+        except Exception:
+            pass
