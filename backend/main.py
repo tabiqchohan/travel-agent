@@ -4,7 +4,7 @@ from fastapi.responses import JSONResponse
 
 from .config import settings
 from .database import init_db, async_session, engine
-from .routers import auth, destinations, hotels, food, trips, budget, weather, smart, reviews, favorites
+from .routers import auth, destinations, hotels, food, trips, budget, weather, smart, reviews, favorites, chat
 from .utils.seed_data import seed_destinations
 
 _db_initialized = False
@@ -82,6 +82,7 @@ app.include_router(weather.router, prefix=api_prefix)
 app.include_router(smart.router, prefix=api_prefix)
 app.include_router(reviews.router, prefix=api_prefix)
 app.include_router(favorites.router, prefix=api_prefix)
+app.include_router(chat.router, prefix=api_prefix)
 
 
 @app.get("/v1/health")

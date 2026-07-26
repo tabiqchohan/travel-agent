@@ -5,3 +5,4 @@ from .food import FoodItem
 from .trip import Trip, TripDay, TripActivity
 from .review import Review
 from .favorite import Favorite
+from .chat import ChatMessage
