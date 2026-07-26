@@ -28,6 +28,17 @@
         .star-rating .star:hover { transform: scale(1.2); }
         .toast { position: fixed; bottom: 2rem; right: 2rem; z-index: 100; animation: slideIn 0.3s ease; }
         @keyframes slideIn { from { transform: translateX(100px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+        .tabs-scroll { -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+        .tabs-scroll::-webkit-scrollbar { display: none; }
+        .mobile-menu { max-height: 0; overflow: hidden; transition: max-height 0.3s ease; }
+        .mobile-menu.open { max-height: 300px; }
+        @media (max-width: 767px) {
+            .hero-title { font-size: 2rem !important; line-height: 1.2 !important; }
+            .hero-subtitle { font-size: 0.9rem !important; }
+            .modal-content { padding: 1.5rem !important; margin: 0.75rem !important; }
+            .glass { padding: 1rem !important; }
+            .section-title { font-size: 1.1rem !important; }
+        }
     </style>
 </head>
 <body class="bg-slate-900 text-white min-h-screen">
@@ -36,17 +47,34 @@
         <div class="max-w-7xl mx-auto flex items-center justify-between">
             <div class="flex items-center gap-3">
                 <i class="fas fa-earth-americas text-blue-400 text-2xl"></i>
-                <span class="text-xl font-bold">Travel Agent <span class="text-blue-400">Pro</span></span>
+                <span class="text-xl font-bold hidden xs:inline md:inline">Travel Agent <span class="text-blue-400">Pro</span></span>
+                <span class="text-lg font-bold xs:hidden md:hidden"><span class="text-blue-400">TA</span> Pro</span>
             </div>
             <div class="flex items-center gap-4">
-                <div id="auth-section">
+                <div id="auth-section" class="hidden md:flex items-center gap-3">
                     <button id="login-btn" onclick="showAuth('login')" class="text-slate-300 hover:text-white transition text-sm"><i class="fas fa-sign-in-alt mr-1"></i>Login</button>
-                    <button id="register-btn" onclick="showAuth('register')" class="ml-3 bg-blue-600 hover:bg-blue-500 px-4 py-1.5 rounded-lg text-sm transition"><i class="fas fa-user-plus mr-1"></i>Register</button>
+                    <button id="register-btn" onclick="showAuth('register')" class="bg-blue-600 hover:bg-blue-500 px-4 py-1.5 rounded-lg text-sm transition"><i class="fas fa-user-plus mr-1"></i>Register</button>
                 </div>
-                <div id="user-section" class="hidden items-center gap-3">
+                <div id="user-section" class="hidden md:flex items-center gap-3">
                     <span id="user-name" class="text-sm text-slate-300"></span>
                     <button onclick="showDeleteAccount()" class="text-red-400 hover:text-red-300 text-sm" title="Delete Account"><i class="fas fa-trash-alt"></i></button>
                     <button onclick="logout()" class="text-red-400 hover:text-red-300 text-sm"><i class="fas fa-sign-out-alt"></i></button>
+                </div>
+                <button id="hamburger-btn" onclick="toggleMobileMenu()" class="md:hidden text-slate-300 hover:text-white text-xl">
+                    <i id="hamburger-icon" class="fas fa-bars"></i>
+                </button>
+            </div>
+        </div>
+        <div id="mobile-menu" class="mobile-menu md:hidden">
+            <div class="pt-3 pb-1 border-t border-slate-700/50 mt-3 space-y-2">
+                <div id="mobile-auth-section">
+                    <button onclick="showAuth('login');closeMobileMenu()" class="w-full text-left text-slate-300 hover:text-white px-3 py-2 rounded-lg text-sm transition"><i class="fas fa-sign-in-alt mr-2"></i>Login</button>
+                    <button onclick="showAuth('register');closeMobileMenu()" class="w-full text-left text-slate-300 hover:text-white px-3 py-2 rounded-lg text-sm transition"><i class="fas fa-user-plus mr-2"></i>Register</button>
+                </div>
+                <div id="mobile-user-section" class="hidden">
+                    <div class="px-3 py-2 text-sm text-slate-300"><i class="fas fa-user mr-2"></i><span id="mobile-user-name"></span></div>
+                    <button onclick="showDeleteAccount();closeMobileMenu()" class="w-full text-left text-red-400 hover:text-red-300 px-3 py-2 rounded-lg text-sm transition"><i class="fas fa-trash-alt mr-2"></i>Delete Account</button>
+                    <button onclick="logout();closeMobileMenu()" class="w-full text-left text-red-400 hover:text-red-300 px-3 py-2 rounded-lg text-sm transition"><i class="fas fa-sign-out-alt mr-2"></i>Logout</button>
                 </div>
             </div>
         </div>
@@ -55,25 +83,25 @@
     <!-- Hero -->
     <div class="relative overflow-hidden">
         <div class="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1488646953014-85cb44e25828?w=1920')] bg-cover bg-center opacity-10"></div>
-        <div class="max-w-7xl mx-auto px-4 py-12 relative">
+        <div class="max-w-7xl mx-auto px-4 py-8 md:py-12 relative">
             <div class="text-center">
-                <h1 class="text-4xl md:text-6xl font-bold mb-4">Explore the World <span class="text-blue-400">Intelligently</span></h1>
-                <p class="text-slate-400 text-lg max-w-2xl mx-auto mb-8">Discover perfect destinations, find hotels, explore local cuisine, and plan your dream trip with AI-powered recommendations.</p>
+                <h1 class="hero-title text-3xl md:text-5xl lg:text-6xl font-bold mb-3 md:mb-4">Explore the World <span class="text-blue-400">Intelligently</span></h1>
+                <p class="hero-subtitle text-slate-400 text-sm md:text-lg max-w-2xl mx-auto mb-6 md:mb-8 px-2">Discover perfect destinations, find hotels, explore local cuisine, and plan your dream trip with AI-powered recommendations.</p>
             </div>
         </div>
     </div>
 
     <!-- Main Content -->
-    <div class="max-w-7xl mx-auto px-4 pb-16">
+    <div class="max-w-7xl mx-auto px-3 md:px-4 pb-20 md:pb-16">
         <!-- Tabs -->
-        <div class="flex flex-wrap gap-2 mb-8 border-b border-slate-700/50 pb-2">
-            <button class="tab-btn active px-5 py-2.5 rounded-lg text-sm font-medium transition flex items-center gap-2" data-tab="destination"><i class="fas fa-map-marked-alt"></i>Find Destinations</button>
-            <button class="tab-btn px-5 py-2.5 rounded-lg text-sm font-medium transition text-slate-400 hover:text-white flex items-center gap-2" data-tab="hotels"><i class="fas fa-hotel"></i>Find Hotels</button>
-            <button class="tab-btn px-5 py-2.5 rounded-lg text-sm font-medium transition text-slate-400 hover:text-white flex items-center gap-2" data-tab="food"><i class="fas fa-utensils"></i>Find Food</button>
-            <button class="tab-btn px-5 py-2.5 rounded-lg text-sm font-medium transition text-slate-400 hover:text-white flex items-center gap-2" data-tab="smart"><i class="fas fa-robot"></i>Smart Assistant</button>
-            <button class="tab-btn px-5 py-2.5 rounded-lg text-sm font-medium transition text-slate-400 hover:text-white flex items-center gap-2" data-tab="trip-planner"><i class="fas fa-route"></i>Trip Planner</button>
-            <button class="tab-btn px-5 py-2.5 rounded-lg text-sm font-medium transition text-slate-400 hover:text-white flex items-center gap-2" data-tab="budget"><i class="fas fa-calculator"></i>Budget</button>
-            <button class="tab-btn px-5 py-2.5 rounded-lg text-sm font-medium transition text-slate-400 hover:text-white flex items-center gap-2" data-tab="weather"><i class="fas fa-cloud-sun"></i>Weather</button>
+        <div class="tabs-scroll flex overflow-x-auto gap-2 mb-6 pb-2 border-b border-slate-700/50 whitespace-nowrap md:flex-wrap md:overflow-x-visible">
+            <button class="tab-btn active px-4 md:px-5 py-2.5 rounded-lg text-xs md:text-sm font-medium transition flex items-center gap-1.5 md:gap-2 flex-shrink-0" data-tab="destination"><i class="fas fa-map-marked-alt"></i><span class="hidden xs:inline">Find </span>Destinations</button>
+            <button class="tab-btn px-4 md:px-5 py-2.5 rounded-lg text-xs md:text-sm font-medium transition text-slate-400 hover:text-white flex items-center gap-1.5 md:gap-2 flex-shrink-0" data-tab="hotels"><i class="fas fa-hotel"></i><span class="hidden xs:inline">Find </span>Hotels</button>
+            <button class="tab-btn px-4 md:px-5 py-2.5 rounded-lg text-xs md:text-sm font-medium transition text-slate-400 hover:text-white flex items-center gap-1.5 md:gap-2 flex-shrink-0" data-tab="food"><i class="fas fa-utensils"></i><span class="hidden xs:inline">Find </span>Food</button>
+            <button class="tab-btn px-4 md:px-5 py-2.5 rounded-lg text-xs md:text-sm font-medium transition text-slate-400 hover:text-white flex items-center gap-1.5 md:gap-2 flex-shrink-0" data-tab="smart"><i class="fas fa-robot"></i><span class="hidden xs:inline">Smart </span>Assistant</button>
+            <button class="tab-btn px-4 md:px-5 py-2.5 rounded-lg text-xs md:text-sm font-medium transition text-slate-400 hover:text-white flex items-center gap-1.5 md:gap-2 flex-shrink-0" data-tab="trip-planner"><i class="fas fa-route"></i><span class="hidden xs:inline">Trip </span>Planner</button>
+            <button class="tab-btn px-4 md:px-5 py-2.5 rounded-lg text-xs md:text-sm font-medium transition text-slate-400 hover:text-white flex items-center gap-1.5 md:gap-2 flex-shrink-0" data-tab="budget"><i class="fas fa-calculator"></i>Budget</button>
+            <button class="tab-btn px-4 md:px-5 py-2.5 rounded-lg text-xs md:text-sm font-medium transition text-slate-400 hover:text-white flex items-center gap-1.5 md:gap-2 flex-shrink-0" data-tab="weather"><i class="fas fa-cloud-sun"></i>Weather</button>
         </div>
 
         <!-- Loading -->
@@ -92,7 +120,7 @@
         <div id="tab-contents">
             <!-- Find Destinations -->
             <div class="tab-content active fade-in" id="destination-tab">
-                <div class="grid md:grid-cols-2 gap-8">
+                <div class="grid md:grid-cols-2 gap-4 md:gap-8">
                     <div class="glass rounded-2xl p-6 border border-slate-700/50">
                         <h2 class="text-xl font-semibold mb-6 flex items-center gap-2"><i class="fas fa-search text-blue-400"></i>Search Destinations</h2>
                         <form id="destination-form" class="space-y-4">
@@ -320,8 +348,8 @@
     </div>
 
     <!-- Forgot Password Modal -->
-    <div id="forgot-modal" class="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center hidden z-50">
-        <div class="bg-slate-800 rounded-2xl p-8 w-full max-w-md mx-4 border border-slate-700">
+    <div id="forgot-modal" class="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center hidden z-50 p-4">
+        <div class="bg-slate-800 rounded-2xl p-6 md:p-8 w-full max-w-md border border-slate-700">
             <div class="flex items-center justify-between mb-6">
                 <h3 class="text-xl font-semibold">Reset Password</h3>
                 <button onclick="hideForgotPassword()" class="text-slate-400 hover:text-white text-xl"><i class="fas fa-times"></i></button>
@@ -363,8 +391,8 @@
     </div>
 
     <!-- Auth Modal -->
-    <div id="auth-modal" class="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center hidden z-50">
-        <div class="bg-slate-800 rounded-2xl p-8 w-full max-w-md mx-4 border border-slate-700">
+    <div id="auth-modal" class="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center hidden z-50 p-4">
+        <div class="bg-slate-800 rounded-2xl p-6 md:p-8 w-full max-w-md border border-slate-700">
             <div class="flex items-center justify-between mb-6">
                 <h3 id="auth-title" class="text-xl font-semibold">Login</h3>
                 <button onclick="hideAuth()" class="text-slate-400 hover:text-white text-xl"><i class="fas fa-times"></i></button>
@@ -405,8 +433,8 @@
     </div>
 
     <!-- Delete Account Modal -->
-    <div id="delete-modal" class="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center hidden z-50">
-        <div class="bg-slate-800 rounded-2xl p-8 w-full max-w-md mx-4 border border-slate-700">
+    <div id="delete-modal" class="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center hidden z-50 p-4">
+        <div class="bg-slate-800 rounded-2xl p-6 md:p-8 w-full max-w-md border border-slate-700">
             <div class="flex items-center justify-between mb-6">
                 <h3 class="text-xl font-semibold text-red-400"><i class="fas fa-exclamation-triangle mr-2"></i>Delete Account</h3>
                 <button onclick="hideDeleteAccount()" class="text-slate-400 hover:text-white text-xl"><i class="fas fa-times"></i></button>
@@ -528,6 +556,9 @@
                 document.getElementById('trip-planner-content').classList.remove('hidden');
                 document.getElementById('smart-history-actions').classList.remove('hidden');
                 document.getElementById('forgot-password-link').classList.remove('hidden');
+                document.getElementById('mobile-auth-section').classList.add('hidden');
+                document.getElementById('mobile-user-section').classList.remove('hidden');
+                document.getElementById('mobile-user-name').textContent = user.full_name || user.username;
                 loadTrips();
             } else {
                 document.getElementById('auth-section').classList.remove('hidden');
@@ -536,6 +567,8 @@
                 document.getElementById('trip-planner-content').classList.add('hidden');
                 document.getElementById('smart-history-actions').classList.add('hidden');
                 document.getElementById('forgot-password-link').classList.add('hidden');
+                document.getElementById('mobile-auth-section').classList.remove('hidden');
+                document.getElementById('mobile-user-section').classList.add('hidden');
             }
         }
         function logout() {
@@ -545,6 +578,20 @@
             document.getElementById('smart-chat-history').innerHTML = '';
         }
         updateUserUI();
+
+        // Mobile menu
+        function toggleMobileMenu() {
+            document.getElementById('mobile-menu').classList.toggle('open');
+            const icon = document.getElementById('hamburger-icon');
+            icon.classList.toggle('fa-bars');
+            icon.classList.toggle('fa-times');
+        }
+        function closeMobileMenu() {
+            document.getElementById('mobile-menu').classList.remove('open');
+            const icon = document.getElementById('hamburger-icon');
+            icon.classList.add('fa-bars');
+            icon.classList.remove('fa-times');
+        }
 
         // Password visibility toggle
         function togglePasswordVisibility() {
